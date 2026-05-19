@@ -24,9 +24,8 @@ var (
 	instancePrivate   ed25519.PrivateKey
 	instanceID        string
 	tenantID          = "tnt_default"
-	outbox            *Outbox
-	exporter          *HTTPExporter
-	configuredDataDir string
+	outbox   *Outbox
+	exporter *HTTPExporter
 )
 
 // DefaultDataDir returns the default SDK data directory.
@@ -87,7 +86,6 @@ func Configure(opts ConfigureOptions) error {
 	instancePrivate = priv
 	instanceID = kp.InstanceID
 	tenantID = newTenant
-	configuredDataDir = dataDir
 	clientMu.Unlock()
 
 	if prevExporter != nil {

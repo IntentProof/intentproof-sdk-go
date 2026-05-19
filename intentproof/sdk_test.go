@@ -129,6 +129,37 @@ func TestConcurrentWrapPreservesChainPositions(t *testing.T) {
 	}
 }
 
+func TestWrapFuncRecordsPanic(t *testing.T) {
+	dbPath, dataDir := testDirs(t)
+	configureTest(t, dbPath, dataDir, "tnt_a")
+	fn := intentproof.WrapFunc("Test", "test.action", func(_ struct{}) (int, error) {
+		panic("boom")
+	})
+	panicked := false
+	func() {
+		defer func() {
+			if recover() != nil {
+				panicked = true
+			}
+		}()
+		intentproof.RunWithCorrelationID("corr-panic", func() {
+			_, _ = fn(struct{}{})
+		})
+	}()
+	if !panicked {
+		t.Fatal("expected panic")
+	}
+	ob, _ := intentproof.GetOutbox()
+	events, _ := ob.Events()
+	if len(events) == 0 {
+		t.Fatal("expected error event after panic")
+	}
+	ev := events[len(events)-1]
+	if ev["status"] != "error" {
+		t.Fatalf("status: %v", ev["status"])
+	}
+}
+
 func TestWrapFuncRecordsErrorStatus(t *testing.T) {
 	dbPath, dataDir := testDirs(t)
 	configureTest(t, dbPath, dataDir, "tnt_a")

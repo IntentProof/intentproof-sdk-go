@@ -133,6 +133,7 @@ func Wrap[T, R any](intent, action string, fn func(T) R) func(T) R {
 }
 
 // WrapFunc instruments fn that returns an error without swallowing it.
+// Panics from fn are re-raised after recording an error event.
 func WrapFunc[T, R any](intent, action string, fn func(T) (R, error)) func(T) (R, error) {
 	return func(arg T) (result R, fnErr error) {
 		t0 := time.Now().UnixMilli()
@@ -140,6 +141,22 @@ func WrapFunc[T, R any](intent, action string, fn func(T) (R, error)) func(T) (R
 		eventID := ulid.Make().String()
 		status := "ok"
 		var errObj map[string]any
+
+		defer func() {
+			if p := recover(); p != nil {
+				status = "error"
+				errObj = map[string]any{"message": fmt.Sprint(p)}
+				t1 := time.Now().UnixMilli()
+				recErr := recordExecution(
+					intent, action, correlationID, eventID,
+					t0, t1, []any{arg}, nil, status, errObj,
+				)
+				if recErr != nil {
+					panic(fmt.Errorf("%v: %w", p, recErr))
+				}
+				panic(p)
+			}
+		}()
 
 		result, fnErr = fn(arg)
 		if fnErr != nil {
