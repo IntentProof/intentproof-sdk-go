@@ -53,19 +53,30 @@ func (e *HTTPExporter) Enqueue(event map[string]any) {
 	e.lock.Unlock()
 	go func() {
 		defer wg.Done()
+		defer e.dropPending(wg)
 		if err := PostExecutionEvent(e.ingestURL, event); err != nil {
 			log.Printf("[intentproof] ingest export failed: %v", err)
 		}
 	}()
 }
 
-// Flush waits for in-flight exports.
+func (e *HTTPExporter) dropPending(wg *sync.WaitGroup) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+	for i, p := range e.pending {
+		if p == wg {
+			e.pending = append(e.pending[:i], e.pending[i+1:]...)
+			return
+		}
+	}
+}
+
+// Flush waits for in-flight exports that were pending when Flush began.
 func (e *HTTPExporter) Flush() {
 	e.lock.Lock()
-	pending := append([]*sync.WaitGroup(nil), e.pending...)
-	e.pending = nil
+	snapshot := append([]*sync.WaitGroup(nil), e.pending...)
 	e.lock.Unlock()
-	for _, wg := range pending {
+	for _, wg := range snapshot {
 		wg.Wait()
 	}
 }
