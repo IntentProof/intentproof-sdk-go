@@ -52,8 +52,8 @@ func (e *HTTPExporter) Enqueue(event map[string]any) {
 	e.pending = append(e.pending, wg)
 	e.lock.Unlock()
 	go func() {
-		defer wg.Done()
 		defer e.dropPending(wg)
+		defer wg.Done()
 		if err := PostExecutionEvent(e.ingestURL, event); err != nil {
 			log.Printf("[intentproof] ingest export failed: %v", err)
 		}

@@ -32,19 +32,19 @@ func recordExecution(
 	status string,
 	errObj map[string]any,
 ) error {
-	ob, err := GetOutbox()
-	if err != nil {
-		return err
+	clientMu.RLock()
+	defer clientMu.RUnlock()
+	if outbox == nil {
+		return fmt.Errorf("intentproof: SDK not configured: call Configure before use")
 	}
-	instID, err := GetInstanceID()
-	if err != nil {
-		return err
+	if instanceID == "" || instancePrivate == nil {
+		return fmt.Errorf("intentproof: SDK not configured: call Configure before use")
 	}
-	priv, err := GetPrivateKey()
-	if err != nil {
-		return err
-	}
-	tenant := GetTenantID()
+	ob := outbox
+	instID := instanceID
+	priv := instancePrivate
+	tenant := tenantID
+	exp := exporter
 
 	buildSigned := func(chainPos int, prevHash string) (map[string]any, string, error) {
 		event := map[string]any{
@@ -88,7 +88,7 @@ func recordExecution(
 	if err != nil {
 		return err
 	}
-	if exp := getExporter(); exp != nil {
+	if exp != nil {
 		exp.Enqueue(signed)
 	}
 	return nil

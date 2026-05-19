@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/intentproof/intentproof-sdk-go/intentproof"
 )
@@ -84,6 +85,34 @@ func TestProducesSignedEventWithSentinelPrevHash(t *testing.T) {
 	if sig["alg"] != "ed25519" {
 		t.Fatalf("signature: %v", sig)
 	}
+}
+
+func TestWrapSurvivesConcurrentConfigure(t *testing.T) {
+	dbPath, dataDir := testDirs(t)
+	configureTest(t, dbPath, dataDir, "tnt_reconf")
+	fn := intentproof.Wrap("Test", "test.action", func(x int) int { return x })
+
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				intentproof.RunWithCorrelationID("corr-reconf", func() { fn(1) })
+			}
+		}
+	}()
+
+	for range 10 {
+		configureTest(t, dbPath, dataDir, "tnt_reconf")
+		time.Sleep(2 * time.Millisecond)
+	}
+	close(stop)
+	wg.Wait()
 }
 
 func TestConcurrentWrapPreservesChainPositions(t *testing.T) {
