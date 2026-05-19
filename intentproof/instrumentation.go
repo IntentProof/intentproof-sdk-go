@@ -104,23 +104,25 @@ func Wrap[T, R any](intent, action string, fn func(T) R) func(T) R {
 		status := "ok"
 		var errObj map[string]any
 
-		defer func() {
-			if p := recover(); p != nil {
-				status = "error"
-				errObj = map[string]any{"message": fmt.Sprint(p)}
-				t1 := time.Now().UnixMilli()
-				recErr := recordExecution(
-					intent, action, correlationID, eventID,
-					t0, t1, []any{arg}, nil, status, errObj,
-				)
-				if recErr != nil {
-					panic(fmt.Errorf("%v: %w", p, recErr))
+		func() {
+			defer func() {
+				if p := recover(); p != nil {
+					status = "error"
+					errObj = map[string]any{"message": fmt.Sprint(p)}
+					t1 := time.Now().UnixMilli()
+					recErr := recordExecution(
+						intent, action, correlationID, eventID,
+						t0, t1, []any{arg}, nil, status, errObj,
+					)
+					if recErr != nil {
+						panic(fmt.Errorf("%v: %w", p, recErr))
+					}
+					panic(p)
 				}
-				panic(p)
-			}
+			}()
+			result = fn(arg)
 		}()
 
-		result = fn(arg)
 		t1 := time.Now().UnixMilli()
 		if err := recordExecution(
 			intent, action, correlationID, eventID,
