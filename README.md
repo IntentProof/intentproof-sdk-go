@@ -4,16 +4,9 @@ Go SDK for emitting signed IntentProof execution events.
 
 ## Status
 
-Early scaffolding repo for IntentProof's Go SDK. Tracks the Node and
-Python SDK `wrap()` / exporter / outbox contract so a Go application
-can emit and verify the same signed execution events.
-
-## Planned scope
-
-- `wrap()` instrumentation helper
-- Correlation-id helpers
-- Event signing and canonical serialization (JCS)
-- Durable outbox and hosted ingest transport
+Core SDK aligned with the Node and Python SDKs: `Configure`, `Wrap`,
+`RunWithCorrelationID`, `Flush`, JCS canonicalization, Ed25519 signing,
+SQLite WAL outbox, and optional HTTP export to ingest.
 
 ## Module path
 
@@ -21,8 +14,65 @@ can emit and verify the same signed execution events.
 github.com/intentproof/intentproof-sdk-go
 ```
 
-SDK implementation and local development steps land in a follow-on
-change.
+## Quick start
+
+```go
+package main
+
+import (
+	"log"
+
+	"github.com/intentproof/intentproof-sdk-go/intentproof"
+)
+
+func main() {
+	if err := intentproof.Configure(intentproof.ConfigureOptions{
+		DBPath:  "./intentproof-outbox.db",
+		DataDir: "./.intentproof-sdk-go",
+	}); err != nil {
+		log.Fatal(err)
+	}
+
+	refund := intentproof.Wrap(
+		"Return funds to the customer",
+		"payments.refund.execute",
+		func(input map[string]any) map[string]any {
+			// call your payment provider here
+			return map[string]any{"id": "re_123"}
+		},
+	)
+
+	intentproof.RunWithCorrelationID("req_refund_ord_1042", func() {
+		_ = refund(map[string]any{
+			"amount_cents":   4999,
+			"payment_intent": "pi_123",
+		})
+	})
+
+	intentproof.Flush()
+}
+```
+
+## Local ingest
+
+- `INTENTPROOF_INGEST_URL` — hosted or local ingest base URL (normalized to
+  `/v1/events`).
+- `INTENTPROOF_USE_LOCAL_INGEST=1` — default local loop
+  `http://127.0.0.1:9787/v1/events`.
+- `INTENTPROOF_INGEST_TOKEN` — bearer token for hosted ingest.
+- `INTENTPROOF_TENANT_ID` — default tenant when `Configure` omits `TenantID`.
+- `INTENTPROOF_OUTBOX_PATH` — SQLite outbox path when `DBPath` is omitted.
+
+Default signing keys live under `~/.intentproof/sdk-go/keypair.json`.
+
+## Development
+
+```bash
+go test ./...
+```
+
+Cross-language signing fixtures under `testdata/fixtures/` match the Node and
+Python SDK conformance set.
 
 ## License
 

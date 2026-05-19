@@ -35,12 +35,7 @@ jobs:
         run: go mod verify
 
       - name: Run tests
-        run: |
-          if [ -z "$(find . -name '*.go' -not -path './.git/*')" ]; then
-            echo "No Go source files found (project scaffold only)"
-            exit 0
-          fi
-          go test ./...
+        run: go test ./...
 
       - name: Package module source archive
         run: |
