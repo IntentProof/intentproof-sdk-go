@@ -3,6 +3,7 @@ package intentproof_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/intentproof/intentproof-sdk-go/intentproof"
@@ -89,10 +90,13 @@ func TestWrapGeneratesCorrelationIDWhenUnset(t *testing.T) {
 		t.Fatalf("events: %d", len(events))
 	}
 	cid, _ := events[0]["correlation_id"].(string)
-	if cid == "" || cid == "corr-outer" {
-		// should be req_* ULID, not empty or from other tests' fixed ids
-		if len(cid) < 4 || cid[:4] != "req_" {
-			t.Fatalf("correlation_id: %q", cid)
-		}
+	if cid == "" {
+		t.Fatal("correlation_id is empty")
+	}
+	if cid == "corr-outer" {
+		t.Fatalf("correlation_id should not reuse outer context: %q", cid)
+	}
+	if !strings.HasPrefix(cid, "req_") {
+		t.Fatalf("correlation_id: %q", cid)
 	}
 }

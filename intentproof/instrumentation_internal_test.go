@@ -22,12 +22,18 @@ func TestWrapPanicRecordsEvent(t *testing.T) {
 	fn := Wrap("Test", "test.action", func(_ struct{}) int {
 		panic("boom")
 	})
-	defer func() {
-		if recover() == nil {
-			t.Fatal("expected panic")
-		}
+	panicked := false
+	func() {
+		defer func() {
+			if recover() != nil {
+				panicked = true
+			}
+		}()
+		RunWithCorrelationID("corr-wrap-panic", func() { fn(struct{}{}) })
 	}()
-	RunWithCorrelationID("corr-wrap-panic", func() { fn(struct{}{}) })
+	if !panicked {
+		t.Fatal("expected panic")
+	}
 
 	ob, err := GetOutbox()
 	if err != nil {
