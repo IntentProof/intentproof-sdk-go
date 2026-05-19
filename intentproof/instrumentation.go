@@ -9,10 +9,7 @@ import (
 
 // RunWithCorrelationID runs fn with correlation_id set for nested wrap() calls.
 func RunWithCorrelationID(correlationID string, fn func()) {
-	gid := goroutineID()
-	correlationByGoroutine.Store(gid, correlationID)
-	defer correlationByGoroutine.Delete(gid)
-	fn()
+	runWithCorrelationID(correlationID, fn)
 }
 
 func isoTimestamp(ms int64) string {

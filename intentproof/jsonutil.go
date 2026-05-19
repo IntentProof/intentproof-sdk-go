@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-// normalizeJSONNumbers converts float64 whole numbers from encoding/json to int64.
+// normalizeJSONNumbers converts JSON numbers to int64 when they are whole.
 func normalizeJSONNumbers(v any) any {
 	switch t := v.(type) {
 	case map[string]any:
@@ -20,6 +20,14 @@ func normalizeJSONNumbers(v any) any {
 			out[i] = normalizeJSONNumbers(val)
 		}
 		return out
+	case json.Number:
+		if i, err := t.Int64(); err == nil {
+			return i
+		}
+		if f, err := t.Float64(); err == nil {
+			return f
+		}
+		return t
 	case float64:
 		if t == float64(int64(t)) {
 			return int64(t)

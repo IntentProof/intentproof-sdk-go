@@ -172,6 +172,43 @@ func TestVerifiableEd25519Signature(t *testing.T) {
 	t.Fatal("event not found")
 }
 
+func TestNestedRunWithCorrelationIDRestoresOuter(t *testing.T) {
+	dbPath, dataDir := testDirs(t)
+	configureTest(t, dbPath, dataDir, "tnt_a")
+	fn := intentproof.Wrap("Test", "test.action", func(x int) int { return x })
+
+	intentproof.RunWithCorrelationID("corr-outer", func() {
+		intentproof.RunWithCorrelationID("corr-inner", func() {
+			fn(1)
+		})
+		fn(2)
+	})
+
+	ob, err := intentproof.GetOutbox()
+	if err != nil {
+		t.Fatal(err)
+	}
+	events, err := ob.Events()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var outer, inner int
+	for _, ev := range events {
+		switch ev["correlation_id"] {
+		case "corr-outer":
+			outer++
+		case "corr-inner":
+			inner++
+		}
+	}
+	if inner != 1 {
+		t.Fatalf("inner events: %d", inner)
+	}
+	if outer != 1 {
+		t.Fatalf("outer events: %d", outer)
+	}
+}
+
 func TestCorrelationIsolation(t *testing.T) {
 	dbPath, dataDir := testDirs(t)
 	configureTest(t, dbPath, dataDir, "tnt_a")

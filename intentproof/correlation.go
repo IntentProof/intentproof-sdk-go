@@ -34,3 +34,17 @@ func currentCorrelationID() string {
 	}
 	return "req_" + ulid.Make().String()
 }
+
+func runWithCorrelationID(correlationID string, fn func()) {
+	gid := goroutineID()
+	prev, hadPrev := correlationByGoroutine.Load(gid)
+	correlationByGoroutine.Store(gid, correlationID)
+	defer func() {
+		if hadPrev {
+			correlationByGoroutine.Store(gid, prev)
+		} else {
+			correlationByGoroutine.Delete(gid)
+		}
+	}()
+	fn()
+}
