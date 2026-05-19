@@ -21,6 +21,7 @@ func OpenOutbox(dbPath string) (*Outbox, error) {
 	if err != nil {
 		return nil, fmt.Errorf("intentproof: open outbox: %w", err)
 	}
+	db.SetMaxOpenConns(1)
 	o := &Outbox{db: db}
 	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
 		_ = db.Close()

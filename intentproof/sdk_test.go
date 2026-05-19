@@ -209,6 +209,40 @@ func TestWrapFuncRecordFailureOnSuccessPathDoesNotMisclassify(t *testing.T) {
 	}
 }
 
+func TestWrapRecordsPanic(t *testing.T) {
+	dbPath, dataDir := testDirs(t)
+	configureTest(t, dbPath, dataDir, "tnt_a")
+	fn := intentproof.Wrap("Test", "test.action", func(_ struct{}) int {
+		panic("boom")
+	})
+	panicked := false
+	func() {
+		defer func() {
+			if recover() != nil {
+				panicked = true
+			}
+		}()
+		intentproof.RunWithCorrelationID("corr-wrap-panic", func() { fn(struct{}{}) })
+	}()
+	if !panicked {
+		t.Fatal("expected panic")
+	}
+	ob, _ := intentproof.GetOutbox()
+	events, _ := ob.Events()
+	var panicEvents []map[string]any
+	for _, ev := range events {
+		if ev["correlation_id"] == "corr-wrap-panic" {
+			panicEvents = append(panicEvents, ev)
+		}
+	}
+	if len(panicEvents) != 1 {
+		t.Fatalf("expected one panic event, got %d", len(panicEvents))
+	}
+	if panicEvents[0]["status"] != "error" {
+		t.Fatalf("status: %v", panicEvents[0]["status"])
+	}
+}
+
 func TestWrapFuncRecordsPanic(t *testing.T) {
 	dbPath, dataDir := testDirs(t)
 	configureTest(t, dbPath, dataDir, "tnt_a")
@@ -231,12 +265,17 @@ func TestWrapFuncRecordsPanic(t *testing.T) {
 	}
 	ob, _ := intentproof.GetOutbox()
 	events, _ := ob.Events()
-	if len(events) == 0 {
-		t.Fatal("expected error event after panic")
+	var panicEvents []map[string]any
+	for _, ev := range events {
+		if ev["correlation_id"] == "corr-panic" {
+			panicEvents = append(panicEvents, ev)
+		}
 	}
-	ev := events[len(events)-1]
-	if ev["status"] != "error" {
-		t.Fatalf("status: %v", ev["status"])
+	if len(panicEvents) != 1 {
+		t.Fatalf("expected one panic event, got %d", len(panicEvents))
+	}
+	if panicEvents[0]["status"] != "error" {
+		t.Fatalf("status: %v", panicEvents[0]["status"])
 	}
 }
 

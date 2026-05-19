@@ -103,32 +103,37 @@ func Wrap[T, R any](intent, action string, fn func(T) R) func(T) R {
 		eventID := ulid.Make().String()
 		status := "ok"
 		var errObj map[string]any
+		var panicVal any
+		didPanic := false
 
 		func() {
 			defer func() {
 				if p := recover(); p != nil {
+					didPanic = true
+					panicVal = p
 					status = "error"
 					errObj = map[string]any{"message": fmt.Sprint(p)}
-					t1 := time.Now().UnixMilli()
-					recErr := recordExecution(
-						intent, action, correlationID, eventID,
-						t0, t1, []any{arg}, nil, status, errObj,
-					)
-					if recErr != nil {
-						panic(fmt.Errorf("%v: %w", p, recErr))
-					}
-					panic(p)
 				}
 			}()
 			result = fn(arg)
 		}()
 
 		t1 := time.Now().UnixMilli()
-		if err := recordExecution(
+		var out any
+		if status == "ok" {
+			out = result
+		}
+		if recErr := recordExecution(
 			intent, action, correlationID, eventID,
-			t0, t1, []any{arg}, result, status, nil,
-		); err != nil {
-			panic(err)
+			t0, t1, []any{arg}, out, status, errObj,
+		); recErr != nil {
+			if didPanic {
+				panic(fmt.Errorf("%v: %w", panicVal, recErr))
+			}
+			panic(recErr)
+		}
+		if didPanic {
+			panic(panicVal)
 		}
 		return result
 	}
@@ -143,27 +148,22 @@ func WrapFunc[T, R any](intent, action string, fn func(T) (R, error)) func(T) (R
 		eventID := ulid.Make().String()
 		status := "ok"
 		var errObj map[string]any
+		var panicVal any
+		didPanic := false
 
 		func() {
 			defer func() {
 				if p := recover(); p != nil {
+					didPanic = true
+					panicVal = p
 					status = "error"
 					errObj = map[string]any{"message": fmt.Sprint(p)}
-					t1 := time.Now().UnixMilli()
-					recErr := recordExecution(
-						intent, action, correlationID, eventID,
-						t0, t1, []any{arg}, nil, status, errObj,
-					)
-					if recErr != nil {
-						panic(fmt.Errorf("%v: %w", p, recErr))
-					}
-					panic(p)
 				}
 			}()
 			result, fnErr = fn(arg)
 		}()
 
-		if fnErr != nil {
+		if !didPanic && fnErr != nil {
 			status = "error"
 			errObj = map[string]any{"message": fnErr.Error()}
 		}
@@ -176,14 +176,20 @@ func WrapFunc[T, R any](intent, action string, fn func(T) (R, error)) func(T) (R
 			intent, action, correlationID, eventID,
 			t0, t1, []any{arg}, out, status, errObj,
 		)
-		if fnErr != nil {
-			if recErr != nil {
+		if recErr != nil {
+			if didPanic {
+				panic(fmt.Errorf("%v: %w", panicVal, recErr))
+			}
+			if fnErr != nil {
 				return result, fmt.Errorf("%w: %w", fnErr, recErr)
 			}
-			return result, fnErr
-		}
-		if recErr != nil {
 			return result, recErr
+		}
+		if didPanic {
+			panic(panicVal)
+		}
+		if fnErr != nil {
+			return result, fnErr
 		}
 		return result, nil
 	}

@@ -3,6 +3,7 @@ package intentproof
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 )
 
 // normalizeJSONNumbers converts JSON numbers to int64 when they are whole.
@@ -47,5 +48,9 @@ func DecodeJSONMap(raw []byte) (map[string]any, error) {
 		return nil, err
 	}
 	norm := normalizeJSONNumbers(v)
-	return norm.(map[string]any), nil
+	m, ok := norm.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("intentproof: decode JSON object: got %T", norm)
+	}
+	return m, nil
 }
