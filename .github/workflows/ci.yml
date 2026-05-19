@@ -20,5 +20,5 @@ jobs:
       - name: Verify module metadata
         run: go mod verify
 
-      - name: Run tests
-        run: go test ./...
+      - name: Run tests and enforce coverage
+        run: bash ./scripts/check-coverage.sh 95

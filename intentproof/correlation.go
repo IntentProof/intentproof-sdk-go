@@ -11,6 +11,10 @@ import (
 
 var correlationByGoroutine sync.Map
 
+var goroutineStackFn = func(buf []byte) int {
+	return runtime.Stack(buf, false)
+}
+
 func parseGoroutineIDFromStack(stack []byte) uint64 {
 	line, _, _ := strings.Cut(string(stack), "\n")
 	if !strings.HasPrefix(line, "goroutine ") {
@@ -30,7 +34,7 @@ func parseGoroutineIDFromStack(stack []byte) uint64 {
 func goroutineID() uint64 {
 	for _, size := range []int{512, 4096} {
 		buf := make([]byte, size)
-		n := runtime.Stack(buf, false)
+		n := goroutineStackFn(buf)
 		if id := parseGoroutineIDFromStack(buf[:n]); id != 0 {
 			return id
 		}

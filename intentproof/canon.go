@@ -1,12 +1,8 @@
 package intentproof
 
-import (
-	"github.com/intentproof/intentproof-sdk-go/internal/canon"
-)
-
 // Canonicalize returns the RFC 8785 canonical JSON encoding of v.
 func Canonicalize(v any) (string, error) {
-	b, err := canon.Marshal(v)
+	b, err := marshalJCS(v)
 	if err != nil {
 		return "", err
 	}

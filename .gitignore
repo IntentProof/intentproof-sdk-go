@@ -10,6 +10,11 @@
 *.out
 coverage.out
 coverage.html
+*.db
+*.db-shm
+*.db-wal
+intentproof/outbox
+intentproof/outbox-*
 
 # Build output
 /bin/

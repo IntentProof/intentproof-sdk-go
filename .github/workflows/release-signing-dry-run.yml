@@ -34,8 +34,8 @@ jobs:
       - name: Verify module metadata
         run: go mod verify
 
-      - name: Run tests
-        run: go test ./...
+      - name: Run tests with coverage
+        run: bash ./scripts/check-coverage.sh 95
 
       - name: Package module source archive
         run: |
