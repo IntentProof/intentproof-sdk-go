@@ -171,6 +171,44 @@ func TestWrapRecordFailureOnSuccessPathDoesNotMisclassify(t *testing.T) {
 	}
 }
 
+func TestWrapFuncRecordFailureOnSuccessPathDoesNotMisclassify(t *testing.T) {
+	dbPath, dataDir := testDirs(t)
+	configureTest(t, dbPath, dataDir, "tnt_a")
+	ob, err := intentproof.GetOutbox()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ob.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	fn := intentproof.WrapFunc("Test", "test.action", func(x int) (int, error) {
+		return x * 2, nil
+	})
+	intentproof.RunWithCorrelationID("corr-wf-rec-fail", func() {
+		_, err = fn(3)
+	})
+	if err == nil {
+		t.Fatal("expected record error")
+	}
+
+	ob2, err := intentproof.OpenOutbox(dbPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ob2.Close()
+	events, err := ob2.Events()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ev := range events {
+		if ev["correlation_id"] != "corr-wf-rec-fail" {
+			continue
+		}
+		t.Fatalf("unexpected event after failed success-path record: %+v", ev)
+	}
+}
+
 func TestWrapFuncRecordsPanic(t *testing.T) {
 	dbPath, dataDir := testDirs(t)
 	configureTest(t, dbPath, dataDir, "tnt_a")
