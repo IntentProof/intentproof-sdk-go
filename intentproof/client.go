@@ -152,9 +152,3 @@ func GetPublicKey() (ed25519.PublicKey, error) {
 	}
 	return priv.Public().(ed25519.PublicKey), nil
 }
-
-func getExporter() *HTTPExporter {
-	clientMu.RLock()
-	defer clientMu.RUnlock()
-	return exporter
-}
