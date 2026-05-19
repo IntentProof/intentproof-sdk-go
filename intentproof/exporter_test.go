@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 
 	"github.com/intentproof/intentproof-sdk-go/intentproof"
@@ -27,9 +28,9 @@ func TestIngestRequestHeadersOmitsBearerWithoutToken(t *testing.T) {
 }
 
 func TestConfigureWrapFlushPostsToIngest(t *testing.T) {
-	var posted int
+	var posted atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		posted++
+		posted.Add(1)
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer srv.Close()
@@ -46,7 +47,7 @@ func TestConfigureWrapFlushPostsToIngest(t *testing.T) {
 	fn := intentproof.Wrap("Export", "export.test", func(n int) int { return n + 1 })
 	intentproof.RunWithCorrelationID("corr-export", func() { fn(1) })
 	intentproof.Flush()
-	if posted != 1 {
-		t.Fatalf("posted: %d", posted)
+	if posted.Load() != 1 {
+		t.Fatalf("posted: %d", posted.Load())
 	}
 }
