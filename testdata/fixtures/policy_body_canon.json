@@ -1,0 +1,1 @@
+{"policy_id":"tnt.test","policy_version":1,"rules":[{"category":"required","id":"r1","severity":"high","spec":{"action":"a"}}],"schema":"intentproof.policy.v1","scope":{"any_event_action_in":["a"]},"spec_version":"1.0.0","tenant_id":"tnt"}
