@@ -12,10 +12,10 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-const (
-	loadAttempts = 50
-	loadRetry    = 20 * time.Millisecond
-)
+const loadRetry = 20 * time.Millisecond
+
+// loadKeypairAttempts is the read retry budget for keypair.json (overridable in tests).
+var loadKeypairAttempts = 50
 
 // Keypair holds persisted SDK identity material.
 type Keypair struct {
@@ -39,20 +39,25 @@ func writeKeypairFile(keyPath string, payload Keypair) error {
 		return err
 	}
 	defer f.Close()
-	if _, err := f.Write(content); err != nil {
+	if _, err := keypairFileWriteFn(f, content); err != nil {
 		_ = os.Remove(keyPath)
 		return err
 	}
-	if err := f.Sync(); err != nil {
+	if err := keypairFileSyncFn(f); err != nil {
 		_ = os.Remove(keyPath)
 		return err
 	}
 	return nil
 }
 
+var (
+	keypairFileWriteFn = func(f *os.File, b []byte) (int, error) { return f.Write(b) }
+	keypairFileSyncFn  = func(f *os.File) error { return f.Sync() }
+)
+
 func loadKeypair(keyPath string) (Keypair, error) {
 	var last error
-	for range loadAttempts {
+	for range loadKeypairAttempts {
 		if err := os.Chmod(keyPath, 0o600); err != nil && !os.IsNotExist(err) {
 			// best-effort permission fix
 		}

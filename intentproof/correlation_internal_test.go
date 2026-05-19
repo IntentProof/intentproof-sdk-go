@@ -1,6 +1,9 @@
 package intentproof
 
-import "testing"
+import (
+	"runtime"
+	"testing"
+)
 
 func TestGoroutineIDParsesCurrentGoroutine(t *testing.T) {
 	if goroutineID() == 0 {
@@ -33,5 +36,42 @@ func TestRunWithCorrelationIDRestoresOuterOnSameGoroutine(t *testing.T) {
 	}
 	if outerSeen != outer {
 		t.Fatalf("outer: got %q", outerSeen)
+	}
+}
+
+func TestGoroutineIDMalformedStack(t *testing.T) {
+	goroutineStackFn = func(buf []byte) int {
+		return copy(buf, "not a stack trace")
+	}
+	defer func() {
+		goroutineStackFn = func(buf []byte) int { return runtime.Stack(buf, false) }
+	}()
+
+	if got := goroutineID(); got != 0 {
+		t.Fatalf("got %d", got)
+	}
+}
+
+func TestGoroutineIDParseFailure(t *testing.T) {
+	goroutineStackFn = func(buf []byte) int {
+		return copy(buf, "goroutine abc [running]:")
+	}
+	defer func() {
+		goroutineStackFn = func(buf []byte) int { return runtime.Stack(buf, false) }
+	}()
+
+	if got := goroutineID(); got != 0 {
+		t.Fatalf("got %d", got)
+	}
+}
+
+func TestCurrentCorrelationIDIgnoresInvalidStoredValue(t *testing.T) {
+	gid := goroutineID()
+	correlationByGoroutine.Store(gid, 123)
+	defer correlationByGoroutine.Delete(gid)
+
+	got := currentCorrelationID()
+	if got == "" || len(got) < 4 {
+		t.Fatalf("correlation id: %q", got)
 	}
 }

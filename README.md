@@ -69,7 +69,13 @@ Default signing keys live under `~/.intentproof/sdk-go/keypair.json`.
 
 ```bash
 go test ./...
+bash ./scripts/check-coverage.sh 95
 ```
+
+CI enforces at least 95% line coverage on the `intentproof/` package (see
+`scripts/check-coverage.sh`). The vendored RFC 8785 engine in `jcs.go` is
+validated by conformance vectors in `jcs_test.go` and is excluded from that
+line threshold.
 
 Cross-language signing fixtures under `testdata/fixtures/` match the Node and
 Python SDK conformance set.

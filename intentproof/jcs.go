@@ -1,4 +1,4 @@
-package canon
+package intentproof
 
 import (
 	"bytes"
@@ -24,12 +24,12 @@ import (
 // numeric parsing to preserve full precision) and then re-emits the
 // resulting JSON tree in canonical form. Callers that already have
 // pre-marshaled JSON bytes should use MarshalRaw instead.
-func Marshal(v any) ([]byte, error) {
+func marshalJCS(v any) ([]byte, error) {
 	raw, err := json.Marshal(v)
 	if err != nil {
-		return nil, fmt.Errorf("canon: marshal input: %w", err)
+		return nil, fmt.Errorf("intentproof: marshal input: %w", err)
 	}
-	return MarshalRaw(raw)
+	return marshalJCSRaw(raw)
 }
 
 // MarshalRaw returns the RFC 8785 (JCS) canonical JSON encoding of
@@ -37,18 +37,18 @@ func Marshal(v any) ([]byte, error) {
 //
 // raw MUST be a complete, well-formed JSON value. Trailing or
 // embedded whitespace, comments, or extra tokens cause an error.
-func MarshalRaw(raw json.RawMessage) ([]byte, error) {
+func marshalJCSRaw(raw json.RawMessage) ([]byte, error) {
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.UseNumber()
 	value, err := decodeValue(dec)
 	if err != nil {
-		return nil, fmt.Errorf("canon: decode input: %w", err)
+		return nil, fmt.Errorf("intentproof: decode input: %w", err)
 	}
 	// Reject trailing tokens and malformed suffixes.
 	if _, err := dec.Token(); err == nil {
-		return nil, errors.New("canon: unexpected trailing JSON token")
+		return nil, errors.New("intentproof: unexpected trailing JSON token")
 	} else if err != io.EOF {
-		return nil, fmt.Errorf("canon: malformed trailing data: %w", err)
+		return nil, fmt.Errorf("intentproof: malformed trailing data: %w", err)
 	}
 	var buf bytes.Buffer
 	if err := encodeValue(&buf, value); err != nil {
@@ -83,7 +83,7 @@ func decodeValue(dec *json.Decoder) (any, error) {
 				}
 				key, ok := keyTok.(string)
 				if !ok {
-					return nil, fmt.Errorf("canon: object key is not a string: %v", keyTok)
+					return nil, fmt.Errorf("intentproof: object key is not a string: %v", keyTok)
 				}
 				val, err := decodeValue(dec)
 				if err != nil {
@@ -116,7 +116,7 @@ func decodeValue(dec *json.Decoder) (any, error) {
 			}
 			return arr, nil
 		default:
-			return nil, fmt.Errorf("canon: unexpected delimiter %q", t)
+			return nil, fmt.Errorf("intentproof: unexpected delimiter %q", t)
 		}
 	case string:
 		return t, nil
@@ -127,7 +127,7 @@ func decodeValue(dec *json.Decoder) (any, error) {
 	case nil:
 		return nil, nil
 	default:
-		return nil, fmt.Errorf("canon: unexpected token type %T", tok)
+		return nil, fmt.Errorf("intentproof: unexpected token type %T", tok)
 	}
 }
 
@@ -144,7 +144,7 @@ func newOrderedObject() *orderedObject {
 
 func (o *orderedObject) set(k string, v any) error {
 	if _, exists := o.values[k]; exists {
-		return fmt.Errorf("canon: duplicate object key: %s", k)
+		return fmt.Errorf("intentproof: duplicate object key: %s", k)
 	}
 	o.keys = append(o.keys, k)
 	o.values[k] = v
@@ -183,7 +183,7 @@ func encodeValue(buf *bytes.Buffer, value any) error {
 	case *orderedObject:
 		return encodeObject(buf, v)
 	default:
-		return fmt.Errorf("canon: unsupported value type %T", value)
+		return fmt.Errorf("intentproof: unsupported value type %T", value)
 	}
 }
 
@@ -271,7 +271,7 @@ func encodeString(buf *bytes.Buffer, s string) error {
 	for i := 0; i < len(s); {
 		r, size := utf8.DecodeRuneInString(s[i:])
 		if r == utf8.RuneError && size == 1 {
-			return fmt.Errorf("canon: invalid UTF-8 in string at byte %d", i)
+			return fmt.Errorf("intentproof: invalid UTF-8 in string at byte %d", i)
 		}
 		switch r {
 		case '"':
@@ -307,7 +307,7 @@ func encodeString(buf *bytes.Buffer, s string) error {
 func encodeNumber(buf *bytes.Buffer, n json.Number) error {
 	s := n.String()
 	if s == "" {
-		return errors.New("canon: empty number")
+		return errors.New("intentproof: empty number")
 	}
 	// Try as int64 first to preserve exact integer formatting when
 	// possible (avoids floating-point reformatting like "1.0" -> "1").
@@ -323,10 +323,10 @@ func encodeNumber(buf *bytes.Buffer, n json.Number) error {
 	}
 	f, err := strconv.ParseFloat(s, 64)
 	if err != nil {
-		return fmt.Errorf("canon: invalid number %q: %w", s, err)
+		return fmt.Errorf("intentproof: invalid number %q: %w", s, err)
 	}
 	if math.IsNaN(f) || math.IsInf(f, 0) {
-		return fmt.Errorf("canon: non-finite number %q is not representable", s)
+		return fmt.Errorf("intentproof: non-finite number %q is not representable", s)
 	}
 	buf.WriteString(formatES6(f))
 	return nil

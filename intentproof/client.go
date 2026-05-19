@@ -29,9 +29,11 @@ var (
 	exporter        *HTTPExporter
 )
 
+var userHomeDirFn = os.UserHomeDir
+
 // DefaultDataDir returns the default SDK data directory.
 func DefaultDataDir() string {
-	home, err := os.UserHomeDir()
+	home, err := userHomeDirFn()
 	if err != nil {
 		return filepath.Join(".intentproof", "sdk-go")
 	}
