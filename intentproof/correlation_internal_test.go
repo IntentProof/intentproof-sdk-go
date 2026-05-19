@@ -8,6 +8,16 @@ func TestGoroutineIDParsesCurrentGoroutine(t *testing.T) {
 	}
 }
 
+func TestParseGoroutineIDFromStack(t *testing.T) {
+	stack := []byte("goroutine 42 [running]:\nmain.main()\n")
+	if got := parseGoroutineIDFromStack(stack); got != 42 {
+		t.Fatalf("got %d", got)
+	}
+	if parseGoroutineIDFromStack([]byte("not a stack")) != 0 {
+		t.Fatal("expected zero for invalid stack")
+	}
+}
+
 func TestRunWithCorrelationIDRestoresOuterOnSameGoroutine(t *testing.T) {
 	outer := "corr-outer"
 	inner := "corr-inner"
