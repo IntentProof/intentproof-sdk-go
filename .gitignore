@@ -1,0 +1,19 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test / coverage
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Build output
+/bin/
+/dist/
+
+# Editor / OS
+.DS_Store

@@ -1,0 +1,48 @@
+# Contributing to intentproof-sdk-go
+
+Thanks for your interest in IntentProof.
+
+## Issues welcome
+
+Please report bugs, API gaps, and conformance findings via
+[GitHub Issues](https://github.com/IntentProof/intentproof-sdk-go/issues).
+That is the primary way to help right now.
+
+We do **not** accept unsolicited pull requests from outside the
+maintainer team. If you are a customer or partner with a change that
+must land upstream, contact IntentProof, Inc. before opening a PR.
+
+Maintainer commits use the Developer Certificate of Origin (DCO) below.
+
+## Developer Certificate of Origin (DCO)
+
+Merged commits in this repository use the
+[Developer Certificate of Origin 1.1](https://developercertificate.org/).
+
+Every commit must carry a `Signed-off-by:` trailer matching the
+author email. The easiest way to do this is to pass `-s` to `git
+commit`:
+
+```bash
+git commit -s -m "..."
+```
+
+You can also retroactively sign off the last commit with:
+
+```bash
+git commit --amend --no-edit -s
+```
+
+Then force-push the amended branch:
+
+```bash
+git push --force-with-lease
+```
+
+Commits that do not include a valid `Signed-off-by` trailer will
+be rejected by CI.
+
+## License
+
+By contributing as a maintainer, you agree your commits are licensed
+under the Apache License 2.0 (see `LICENSE`).

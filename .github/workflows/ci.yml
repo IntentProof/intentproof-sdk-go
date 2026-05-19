@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    name: "IntentProof CI: Build and Test"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Verify module metadata
+        run: go mod verify
+
+      - name: Run tests
+        run: |
+          if [ -z "$(find . -name '*.go' -not -path './.git/*')" ]; then
+            echo "No Go source files found (project scaffold only)"
+            exit 0
+          fi
+          go test ./...

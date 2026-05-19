@@ -1,0 +1,82 @@
+name: release signing dry run
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: SemVer version to place in dry-run attestations.
+        required: true
+        default: 0.0.0-dryrun
+        type: string
+      release_ref:
+        description: Git ref to check out for the dry run.
+        required: true
+        default: refs/heads/main
+        type: string
+
+jobs:
+  build-go-module:
+    name: "IntentProof Release: Build Go Module Archive"
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_paths: ${{ steps.archive.outputs.artifact_paths }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ inputs.release_ref }}
+
+      - uses: actions/setup-go@40b3466c64957d331b6193b26c7cd62c6e411fd6
+        with:
+          go-version: '1.25'
+
+      - name: Verify module metadata
+        run: go mod verify
+
+      - name: Run tests
+        run: |
+          if [ -z "$(find . -name '*.go' -not -path './.git/*')" ]; then
+            echo "No Go source files found (project scaffold only)"
+            exit 0
+          fi
+          go test ./...
+
+      - name: Package module source archive
+        run: |
+          mkdir -p dist
+          tar czf "dist/intentproof-sdk-go-${{ inputs.release_version }}.tar.gz" \
+            go.mod LICENSE NOTICE README.md CONTRIBUTING.md SECURITY.md
+
+      - name: Export archive paths
+        id: archive
+        run: |
+          {
+            echo 'artifact_paths<<EOF'
+            find dist -maxdepth 1 -type f | sort
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: go-release-dry-run
+          path: dist/*
+
+  sign-go-module:
+    name: "IntentProof Release: Sign Go Module Archive"
+    needs: build-go-module
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+      packages: write
+    uses: IntentProof/intentproof-tools/.github/workflows/release-build-sign.yml@317387a9724787e4ac484f39de46d7e559b6c98d
+    with:
+      artifact_kind: generic
+      subject_name: intentproof-sdk-go
+      release_version: ${{ inputs.release_version }}
+      release_ref: ${{ inputs.release_ref }}
+      artifact_paths: ${{ needs.build-go-module.outputs.artifact_paths }}
+      artifact_download_name: go-release-dry-run
+      artifact_download_path: dist
+      attest_to_rekor: false
