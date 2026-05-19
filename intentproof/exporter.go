@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var ingestHTTPClient = &http.Client{Timeout: 5 * time.Second}
+
 // IngestRequestHeaders returns HTTP headers for ingest POSTs.
 func IngestRequestHeaders() map[string]string {
 	headers := map[string]string{"Content-Type": "application/json"}
@@ -19,12 +21,7 @@ func IngestRequestHeaders() map[string]string {
 	return headers
 }
 
-// PostExecutionEvent POSTs a signed event to ingest.
-func PostExecutionEvent(ingestURL string, event map[string]any) error {
-	body, err := json.Marshal(event)
-	if err != nil {
-		return err
-	}
+func postExecutionEventBody(ingestURL string, body []byte) error {
 	req, err := http.NewRequest(http.MethodPost, ingestURL, bytes.NewReader(body))
 	if err != nil {
 		return err
@@ -32,8 +29,7 @@ func PostExecutionEvent(ingestURL string, event map[string]any) error {
 	for k, v := range IngestRequestHeaders() {
 		req.Header.Set(k, v)
 	}
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := ingestHTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -43,4 +39,13 @@ func PostExecutionEvent(ingestURL string, event map[string]any) error {
 		return fmt.Errorf("ingest POST %d: %s", resp.StatusCode, string(detail))
 	}
 	return nil
+}
+
+// PostExecutionEvent POSTs a signed event to ingest.
+func PostExecutionEvent(ingestURL string, event map[string]any) error {
+	body, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	return postExecutionEventBody(ingestURL, body)
 }

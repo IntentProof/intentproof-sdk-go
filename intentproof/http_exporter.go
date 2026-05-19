@@ -1,6 +1,7 @@
 package intentproof
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 	"strings"
@@ -46,6 +47,12 @@ func NewHTTPExporter(ingestURL string) *HTTPExporter {
 
 // Enqueue starts a background POST for event.
 func (e *HTTPExporter) Enqueue(event map[string]any) {
+	body, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("[intentproof] ingest export failed: %v", err)
+		return
+	}
+	url := e.ingestURL
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	e.lock.Lock()
@@ -54,7 +61,7 @@ func (e *HTTPExporter) Enqueue(event map[string]any) {
 	go func() {
 		defer e.dropPending(wg)
 		defer wg.Done()
-		if err := PostExecutionEvent(e.ingestURL, event); err != nil {
+		if err := postExecutionEventBody(url, body); err != nil {
 			log.Printf("[intentproof] ingest export failed: %v", err)
 		}
 	}()

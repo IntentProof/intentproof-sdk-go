@@ -12,14 +12,17 @@ import (
 var correlationByGoroutine sync.Map
 
 func goroutineID() uint64 {
-	var buf [64]byte
-	n := runtime.Stack(buf[:], false)
-	// "goroutine 42 ["
-	fields := strings.Fields(string(buf[:n]))
-	if len(fields) < 2 {
+	buf := make([]byte, 256)
+	n := runtime.Stack(buf, false)
+	line, _, _ := strings.Cut(string(buf[:n]), "\n")
+	if !strings.HasPrefix(line, "goroutine ") {
 		return 0
 	}
-	id, err := strconv.ParseUint(fields[1], 10, 64)
+	idField, _, found := strings.Cut(strings.TrimPrefix(line, "goroutine "), " ")
+	if !found || idField == "" {
+		return 0
+	}
+	id, err := strconv.ParseUint(idField, 10, 64)
 	if err != nil {
 		return 0
 	}

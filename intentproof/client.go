@@ -20,12 +20,13 @@ type ConfigureOptions struct {
 }
 
 var (
-	clientMu          sync.RWMutex
-	instancePrivate   ed25519.PrivateKey
-	instanceID        string
-	tenantID          = "tnt_default"
-	outbox   *Outbox
-	exporter *HTTPExporter
+	configureMu     sync.Mutex
+	clientMu        sync.RWMutex
+	instancePrivate ed25519.PrivateKey
+	instanceID      string
+	tenantID        = "tnt_default"
+	outbox          *Outbox
+	exporter        *HTTPExporter
 )
 
 // DefaultDataDir returns the default SDK data directory.
@@ -39,6 +40,9 @@ func DefaultDataDir() string {
 
 // Configure initializes keys, outbox, and optional HTTP export.
 func Configure(opts ConfigureOptions) error {
+	configureMu.Lock()
+	defer configureMu.Unlock()
+
 	dataDir := opts.DataDir
 	if dataDir == "" {
 		dataDir = DefaultDataDir()
