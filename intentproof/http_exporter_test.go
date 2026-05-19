@@ -83,11 +83,14 @@ func TestHTTPExporterPrunesCompletedPending(t *testing.T) {
 			if remaining == 0 {
 				return
 			}
-			t.Fatalf("pending not pruned after completion: %d", remaining)
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
-	t.Fatalf("timed out: done=%d want %d", done.Load(), n)
+	exp.lock.Lock()
+	pending := len(exp.pending)
+	exp.lock.Unlock()
+	t.Fatalf("timed out: done=%d pending=%d want done=%d pending=0",
+		done.Load(), pending, n)
 }
 
 func TestHTTPExporterSustainedEnqueueWithoutFlush(t *testing.T) {

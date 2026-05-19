@@ -4,7 +4,7 @@ set -euo pipefail
 
 MIN_COVERAGE="${1:-95}"
 
-go test -covermode=set -coverprofile=coverage.out ./intentproof/...
+GOWORK=off go test -covermode=set -coverprofile=coverage.out ./intentproof/...
 
 TOTAL_PERCENT="$(awk '
   !/^mode:/ {

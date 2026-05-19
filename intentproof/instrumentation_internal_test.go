@@ -96,13 +96,18 @@ func TestWrapPanicWithRecordFailureChainsError(t *testing.T) {
 	fn := Wrap("Test", "test.action", func(_ struct{}) int {
 		panic("boom")
 	})
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("expected panic")
-		}
+	panicked := false
+	func() {
+		defer func() {
+			if recover() != nil {
+				panicked = true
+			}
+		}()
+		RunWithCorrelationID("corr-pc", func() { fn(struct{}{}) })
 	}()
-	RunWithCorrelationID("corr-pc", func() { fn(struct{}{}) })
+	if !panicked {
+		t.Fatal("expected panic")
+	}
 }
 
 func TestWrapFuncPanicWithRecordFailure(t *testing.T) {
@@ -120,8 +125,18 @@ func TestWrapFuncPanicWithRecordFailure(t *testing.T) {
 	fn := WrapFunc("Test", "test.action", func(_ struct{}) (int, error) {
 		panic("boom")
 	})
-	defer func() { recover() }()
-	_, _ = fn(struct{}{})
+	panicked := false
+	func() {
+		defer func() {
+			if recover() != nil {
+				panicked = true
+			}
+		}()
+		_, _ = fn(struct{}{})
+	}()
+	if !panicked {
+		t.Fatal("expected panic")
+	}
 }
 
 func TestWrapFuncReturnsFnErrWhenRecordFails(t *testing.T) {
