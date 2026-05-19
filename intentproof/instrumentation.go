@@ -2,10 +2,15 @@ package intentproof
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/oklog/ulid/v2"
 )
+
+var logExecutionRecordFailure = func(err error) {
+	log.Printf("[intentproof] execution record failed: %v", err)
+}
 
 // RunWithCorrelationID runs fn with correlation_id set for nested wrap() calls.
 func RunWithCorrelationID(correlationID string, fn func()) {
@@ -95,7 +100,9 @@ func recordExecution(
 }
 
 // Wrap instruments fn to emit a signed ExecutionEvent.v1 on each call.
-// Panics from fn are re-raised after recording an error event.
+// Panics from fn are re-raised after recording an error event. When fn
+// returns normally but recording fails, the result is still returned and
+// the failure is logged; use WrapFunc to surface recording errors.
 func Wrap[T, R any](intent, action string, fn func(T) R) func(T) R {
 	return func(arg T) (result R) {
 		t0 := time.Now().UnixMilli()
@@ -130,7 +137,7 @@ func Wrap[T, R any](intent, action string, fn func(T) R) func(T) R {
 			if didPanic {
 				panic(fmt.Errorf("%v: %w", panicVal, recErr))
 			}
-			panic(recErr)
+			logExecutionRecordFailure(recErr)
 		}
 		if didPanic {
 			panic(panicVal)

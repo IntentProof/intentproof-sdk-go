@@ -158,7 +158,7 @@ func TestConcurrentWrapPreservesChainPositions(t *testing.T) {
 	}
 }
 
-func TestWrapRecordFailureOnSuccessPathDoesNotMisclassify(t *testing.T) {
+func TestWrapRecordFailureOnSuccessPathReturnsResult(t *testing.T) {
 	dbPath, dataDir := testDirs(t)
 	configureTest(t, dbPath, dataDir, "tnt_a")
 	ob, err := intentproof.GetOutbox()
@@ -170,17 +170,17 @@ func TestWrapRecordFailureOnSuccessPathDoesNotMisclassify(t *testing.T) {
 	}
 
 	fn := intentproof.Wrap("Test", "test.action", func(x int) int { return x * 2 })
-	panicked := false
+	var got int
 	func() {
 		defer func() {
 			if recover() != nil {
-				panicked = true
+				t.Fatal("unexpected panic on success-path record failure")
 			}
 		}()
-		intentproof.RunWithCorrelationID("corr-rec-fail", func() { fn(3) })
+		intentproof.RunWithCorrelationID("corr-rec-fail", func() { got = fn(3) })
 	}()
-	if !panicked {
-		t.Fatal("expected panic from record failure")
+	if got != 6 {
+		t.Fatalf("result: got %d want 6", got)
 	}
 
 	ob2, err := intentproof.OpenOutbox(dbPath)
