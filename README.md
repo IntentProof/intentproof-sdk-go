@@ -1,6 +1,13 @@
 # intentproof-sdk-go
 
+[![CI](https://github.com/IntentProof/intentproof-sdk-go/actions/workflows/ci.yml/badge.svg)](https://github.com/IntentProof/intentproof-sdk-go/actions/workflows/ci.yml)
+
 Go SDK for emitting signed IntentProof execution events.
+
+## Who uses this
+
+Go application authors who instrument business logic with `Wrap` and export
+signed execution events to local or hosted ingest.
 
 ## Status
 
@@ -13,6 +20,49 @@ SQLite WAL outbox, and optional HTTP export to ingest.
 ```text
 github.com/intentproof/intentproof-sdk-go
 ```
+
+## Install
+
+```bash
+go get github.com/intentproof/intentproof-sdk-go/intentproof
+```
+
+## Verify
+
+Cross-language signing fixtures under `testdata/fixtures/` match the Node and
+Python SDK conformance set. Run `go test ./...` before tagging releases.
+
+## Test
+
+```bash
+go test ./...
+bash ./scripts/check-coverage.sh 95
+```
+
+CI enforces at least 95% line coverage on the `intentproof/` package (see
+`scripts/check-coverage.sh`). The vendored RFC 8785 engine in `jcs.go` is
+validated by conformance vectors in `jcs_test.go` and is excluded from that
+line threshold.
+
+## Release
+
+Go module tags are published from this repository. Maintainer binary releases
+(if any) use Sigstore signing via
+[`intentproof-tools`](https://github.com/IntentProof/intentproof-tools).
+
+## Documentation hub
+
+Per-repo README files plus
+[`intentproof-infra`](https://github.com/IntentProof/intentproof-infra) for
+self-host install and image verification. Docs site deferred — see
+[`docs-hub-decision.md`](https://github.com/IntentProof/intentproof-infra/blob/main/docs/docs-hub-decision.md).
+
+## Support
+
+Report bugs, API gaps, and conformance findings via
+[GitHub Issues](https://github.com/IntentProof/intentproof-sdk-go/issues).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). Security reports:
+[`SECURITY.md`](SECURITY.md).
 
 ## Quick start
 
@@ -65,21 +115,7 @@ func main() {
 
 Default signing keys live under `~/.intentproof/sdk-go/keypair.json`.
 
-## Development
-
-```bash
-go test ./...
-bash ./scripts/check-coverage.sh 95
-```
-
-CI enforces at least 95% line coverage on the `intentproof/` package (see
-`scripts/check-coverage.sh`). The vendored RFC 8785 engine in `jcs.go` is
-validated by conformance vectors in `jcs_test.go` and is excluded from that
-line threshold.
-
-Cross-language signing fixtures under `testdata/fixtures/` match the Node and
-Python SDK conformance set.
-
 ## License
 
-Apache License 2.0 (`LICENSE`).
+Apache License 2.0 — see [`LICENSE`](LICENSE), [`NOTICE`](NOTICE), and
+[`TRADEMARK.md`](TRADEMARK.md).
