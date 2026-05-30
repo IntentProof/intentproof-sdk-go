@@ -36,11 +36,12 @@ Python SDK conformance set. Run `go test ./...` before tagging releases.
 
 ```bash
 go test ./...
-bash ./scripts/check-coverage.sh 95
+GOWORK=off go test -coverprofile=coverage.out ./intentproof/...
+bash ./scripts/check-coverage.sh coverage.out
 ```
 
-CI enforces at least 95% line coverage on the `intentproof/` package (see
-`scripts/check-coverage.sh`). The vendored RFC 8785 engine in `jcs.go` is
+Tiered coverage: **90%** total and **95%** on `intentproof/` (see
+`scripts/README-coverage-tiers.md`). The vendored RFC 8785 engine in `jcs.go` is
 validated by conformance vectors in `jcs_test.go` and is excluded from that
 line threshold.
 
