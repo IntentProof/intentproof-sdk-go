@@ -13,6 +13,9 @@ import (
 func signingFixtureDir(t *testing.T) string {
 	t.Helper()
 	if specDir := strings.TrimSpace(os.Getenv("INTENTPROOF_SPEC_DIR")); specDir != "" {
+		if !filepath.IsAbs(specDir) {
+			specDir = filepath.Join("..", specDir)
+		}
 		return filepath.Join(specDir, "golden", "sdk-signing")
 	}
 	return filepath.Join("..", "testdata", "fixtures")
