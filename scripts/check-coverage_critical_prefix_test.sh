@@ -6,7 +6,7 @@ root="$(mktemp -d)"
 trap 'rm -rf "$root"' EXIT
 
 mkdir -p "$root/scripts"
-cp "$(dirname "$0")/check-coverage.sh" "$root/scripts/"
+cp "$(dirname "$0")/check-coverage.sh" "$(dirname "$0")/check-coverage-aggregate.awk" "$root/scripts/"
 
 cat >"$root/scripts/coverage-tiers.conf" <<'EOF'
 TOTAL_MIN=50

@@ -9,11 +9,18 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CONF="${ROOT}/scripts/coverage-tiers.conf"
+SCRIPTS="${ROOT}/scripts"
+CONF="${SCRIPTS}/coverage-tiers.conf"
+AWK_AGG="${SCRIPTS}/check-coverage-aggregate.awk"
 PROFILE_PATH="${1:-coverage.out}"
 
 if [[ ! -f "$CONF" ]]; then
   echo "coverage tiers config not found: $CONF" >&2
+  exit 2
+fi
+
+if [[ ! -f "$AWK_AGG" ]]; then
+  echo "coverage awk helper not found: $AWK_AGG" >&2
   exit 2
 fi
 
@@ -50,33 +57,26 @@ else
   exit 2
 fi
 
+profile_coverage() {
+  local prefix="${1:-}"
+  awk -v exclude_file="$exclude_file" -v path_prefix="$prefix" \
+    -f "$AWK_AGG" "$PROFILE_PATH"
+}
+
+coverage_percent_display() {
+  awk -v c="$1" -v t="$2" 'BEGIN {
+    if (t == 0) { print "0.0"; exit }
+    printf "%.1f", int(1000 * c / t) / 10
+  }'
+}
+
+threshold_met() {
+  awk -v c="$1" -v t="$2" -v min="$3" \
+    'BEGIN { exit !(t > 0 && c * 100 >= t * min) }'
+}
+
 read -r TOTAL_COVERED TOTAL_STMTS <<EOF
-$(awk -v exclude_file="$exclude_file" '
-  BEGIN {
-    if (exclude_file != "") {
-      while ((getline line < exclude_file) > 0) {
-        if (line != "") excl[++n] = line
-      }
-      close(exclude_file)
-    }
-  }
-  function excluded(path,   i) {
-    for (i = 1; i <= n; i++) {
-      if (index(path, excl[i]) > 0) return 1
-    }
-    return 0
-  }
-  NR > 1 {
-    path = $1
-    sub(/:.*$/, "", path)
-    if (n > 0 && excluded(path)) next
-    stmts = $(NF - 1) + 0
-    cnt = $NF + 0
-    total += stmts
-    if (cnt > 0) covered += stmts
-  }
-  END { print covered + 0, total + 0 }
-' "$PROFILE_PATH")
+$(profile_coverage "")
 EOF
 
 if [[ -z "$TOTAL_STMTS" || "$TOTAL_STMTS" -eq 0 ]]; then
@@ -87,46 +87,14 @@ fi
 report_threshold() {
   local label="$1" covered="$2" total="$3" min="$4"
   local pct
-  pct="$(awk -v c="$covered" -v t="$total" 'BEGIN { printf "%.1f", 100 * c / t }')"
+  pct="$(coverage_percent_display "$covered" "$total")"
   echo "${label}: ${pct}% (${covered}/${total} statements), minimum ${min}%"
-  if awk -v c="$covered" -v t="$total" -v min="$min" \
-    'BEGIN { exit !(t > 0 && c * 100 >= t * min) }'; then
+  if threshold_met "$covered" "$total" "$min"; then
     echo "  PASS"
     return 0
   fi
   echo "  FAIL" >&2
   return 1
-}
-
-prefix_coverage() {
-  local prefix="$1"
-  awk -v prefix="$prefix" -v exclude_file="$exclude_file" '
-    BEGIN {
-      if (exclude_file != "") {
-        while ((getline line < exclude_file) > 0) {
-          if (line != "") excl[++n] = line
-        }
-        close(exclude_file)
-      }
-    }
-    function excluded(path,   i) {
-      for (i = 1; i <= n; i++) {
-        if (index(path, excl[i]) > 0) return 1
-      }
-      return 0
-    }
-    NR > 1 {
-      path = $1
-      sub(/:.*$/, "", path)
-      if (n > 0 && excluded(path)) next
-      if (index(path, prefix) == 0) next
-      stmts = $(NF - 1) + 0
-      cnt = $NF + 0
-      total += stmts
-      if (cnt > 0) covered += stmts
-    }
-    END { print covered + 0, total + 0 }
-  ' "$PROFILE_PATH"
 }
 
 fail=0
@@ -138,7 +106,7 @@ while IFS= read -r rule; do
   min="${rule%%:*}"
   prefix="${rule#*:}"
   read -r c t <<EOF
-$(prefix_coverage "$prefix")
+$(profile_coverage "$prefix")
 EOF
   if [[ "$t" -eq 0 ]]; then
     echo "  ${prefix} (min ${min}%): no statements in profile, FAIL" >&2
