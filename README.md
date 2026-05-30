@@ -40,7 +40,7 @@ GOWORK=off go test -coverprofile=coverage.out ./intentproof/...
 bash ./scripts/check-coverage.sh coverage.out
 ```
 
-Tiered coverage: **90%** repo total and **94%** on `intentproof/` (target **95%**; see
+Tiered coverage: **90%** total and **95%** on `intentproof/` (see
 `scripts/README-coverage-tiers.md`). The vendored RFC 8785 engine in `jcs.go` is
 validated by conformance vectors in `jcs_test.go` and is excluded from that
 line threshold.

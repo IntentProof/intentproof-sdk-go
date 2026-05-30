@@ -52,17 +52,24 @@ fi
 
 read -r TOTAL_COVERED TOTAL_STMTS <<EOF
 $(awk -v exclude_file="$exclude_file" '
-  function excluded(path,   i, line) {
-    while ((getline line < exclude_file) > 0) {
-      if (line != "" && index(path, line) > 0) return 1
+  BEGIN {
+    if (exclude_file != "") {
+      while ((getline line < exclude_file) > 0) {
+        if (line != "") excl[++n] = line
+      }
+      close(exclude_file)
     }
-    close(exclude_file)
+  }
+  function excluded(path,   i) {
+    for (i = 1; i <= n; i++) {
+      if (index(path, excl[i]) > 0) return 1
+    }
     return 0
   }
   NR > 1 {
     path = $1
     sub(/:.*$/, "", path)
-    if (exclude_file != "" && excluded(path)) next
+    if (n > 0 && excluded(path)) next
     stmts = $(NF - 1) + 0
     cnt = $NF + 0
     total += stmts
@@ -94,17 +101,24 @@ report_threshold() {
 prefix_coverage() {
   local prefix="$1"
   awk -v prefix="$prefix" -v exclude_file="$exclude_file" '
-    function excluded(path,   line) {
-      while ((getline line < exclude_file) > 0) {
-        if (line != "" && index(path, line) > 0) return 1
+    BEGIN {
+      if (exclude_file != "") {
+        while ((getline line < exclude_file) > 0) {
+          if (line != "") excl[++n] = line
+        }
+        close(exclude_file)
       }
-      close(exclude_file)
+    }
+    function excluded(path,   i) {
+      for (i = 1; i <= n; i++) {
+        if (index(path, excl[i]) > 0) return 1
+      }
       return 0
     }
     NR > 1 {
       path = $1
       sub(/:.*$/, "", path)
-      if (exclude_file != "" && excluded(path)) next
+      if (n > 0 && excluded(path)) next
       if (index(path, prefix) == 0) next
       stmts = $(NF - 1) + 0
       cnt = $NF + 0
