@@ -141,7 +141,8 @@ while IFS= read -r rule; do
 $(prefix_coverage "$prefix")
 EOF
   if [[ "$t" -eq 0 ]]; then
-    echo "  ${prefix} (min ${min}%): no statements in profile, skipped"
+    echo "  ${prefix} (min ${min}%): no statements in profile, FAIL" >&2
+    fail=1
     continue
   fi
   report_threshold "  ${prefix}" "$c" "$t" "$min" || fail=1
