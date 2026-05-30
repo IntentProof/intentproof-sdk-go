@@ -10,8 +10,19 @@ import (
 	"github.com/intentproof/intentproof-sdk-go/intentproof"
 )
 
+func signingFixtureDir(t *testing.T) string {
+	t.Helper()
+	if specDir := strings.TrimSpace(os.Getenv("INTENTPROOF_SPEC_DIR")); specDir != "" {
+		if !filepath.IsAbs(specDir) {
+			specDir = filepath.Join("..", specDir)
+		}
+		return filepath.Join(specDir, "golden", "sdk-signing")
+	}
+	return filepath.Join("..", "testdata", "fixtures")
+}
+
 func TestSigningGoldenBytes(t *testing.T) {
-	fixtureDir := filepath.Join("..", "testdata", "fixtures")
+	fixtureDir := signingFixtureDir(t)
 	unsignedRaw, err := os.ReadFile(filepath.Join(fixtureDir, "signing_unsigned_event.json"))
 	if err != nil {
 		t.Fatal(err)
