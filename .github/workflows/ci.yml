@@ -21,4 +21,4 @@ jobs:
         run: go mod verify
 
       - name: Run tests and enforce coverage
-        run: bash ./scripts/check-coverage.sh 95
+        run: bash ./scripts/run-coverage-gate.sh
