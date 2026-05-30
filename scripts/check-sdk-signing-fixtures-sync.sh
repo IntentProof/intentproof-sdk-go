@@ -3,8 +3,14 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
 LOCAL="${ROOT}/testdata/fixtures"
-CANONICAL="${INTENTPROOF_SPEC_DIR:?INTENTPROOF_SPEC_DIR must point at intentproof-spec}/golden/sdk-signing"
+
+spec_dir="${INTENTPROOF_SPEC_DIR:?INTENTPROOF_SPEC_DIR must point at intentproof-spec}"
+if [[ "$spec_dir" != /* ]]; then
+  spec_dir="${ROOT}/${spec_dir}"
+fi
+CANONICAL="${spec_dir}/golden/sdk-signing"
 
 if [[ ! -d "$CANONICAL" ]]; then
   echo "canonical sdk-signing fixtures not found at ${CANONICAL}" >&2
