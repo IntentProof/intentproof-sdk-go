@@ -13,11 +13,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout spec repository
+      - name: Checkout intentproof-tools (SPEC_REF source)
+        uses: actions/checkout@v4
+        with:
+          repository: IntentProof/intentproof-tools
+          ref: main
+          path: intentproof-tools
+
+      - name: Read pinned spec ref
+        id: spec_ref
+        run: |
+          ref="$(tr -d '[:space:]' < intentproof-tools/SPEC_REF)"
+          if ! echo "$ref" | grep -qE '^[0-9a-f]{40}$'; then
+            echo "Invalid SPEC_REF in intentproof-tools: '$ref'" >&2
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout intentproof-spec at pinned ref
         uses: actions/checkout@v4
         with:
           repository: IntentProof/intentproof-spec
-          ref: main
+          ref: ${{ steps.spec_ref.outputs.ref }}
           path: intentproof-spec
 
       - uses: actions/setup-go@v5
@@ -26,6 +43,11 @@ jobs:
 
       - name: go build
         run: go build ./...
+
+      - name: Verify sdk-signing fixtures match pinned spec
+        env:
+          INTENTPROOF_SPEC_DIR: intentproof-spec
+        run: bash scripts/check-sdk-signing-fixtures-sync.sh
 
       - name: go test
         env:
