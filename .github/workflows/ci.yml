@@ -20,6 +20,14 @@ jobs:
           ref: main
           path: intentproof-spec
 
+      - name: Ensure spec sdk-signing golden checkout
+        run: |
+          if [[ -d intentproof-spec/golden/sdk-signing ]]; then
+            exit 0
+          fi
+          git -C intentproof-spec fetch origin phase3-ecosystem-conformance
+          git -C intentproof-spec checkout FETCH_HEAD
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
