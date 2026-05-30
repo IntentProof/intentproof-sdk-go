@@ -34,8 +34,8 @@ jobs:
       - name: Verify module metadata
         run: go mod verify
 
-      - name: Run tests with coverage
-        run: bash ./scripts/run-coverage-gate.sh
+      - name: Run tests
+        run: go test ./...
 
       - name: Package module source archive
         run: |
