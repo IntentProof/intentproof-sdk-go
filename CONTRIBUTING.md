@@ -1,54 +1,24 @@
 # Contributing to intentproof-sdk-go
 
-Thanks for your interest in IntentProof.
+Thank you for helping improve IntentProof.
 
-## Issues welcome
+## How to help
 
-Please report bugs, API gaps, and conformance findings via
-[GitHub Issues](https://github.com/IntentProof/intentproof-sdk-go/issues).
-That is the primary way to help right now.
+We welcome [GitHub Issues](https://github.com/IntentProof/intentproof-sdk-go/issues)
+and pull requests.
 
-We do **not** accept unsolicited pull requests from outside the
-maintainer team. If you are a customer or partner with a change that
-must land upstream, contact IntentProof, Inc. before opening a PR.
+- **Small fixes:** open a PR with a short summary and test plan.
+- **API or signing behavior changes:** discuss in an issue first; they must stay
+  aligned with [`intentproof-spec`](https://github.com/IntentProof/intentproof-spec)
+  golden vectors.
 
-Maintainer commits use the Developer Certificate of Origin (DCO) below.
+## Pull requests
 
-## Developer Certificate of Origin (DCO)
-
-Merged commits in this repository use the
-[Developer Certificate of Origin 1.1](https://developercertificate.org/).
-
-Every commit must carry a `Signed-off-by:` trailer matching the
-author email. The easiest way to do this is to pass `-s` to `git
-commit`:
-
-```bash
-git commit -s -m "..."
-```
-
-You can also retroactively sign off the last commit with:
-
-```bash
-git commit --amend --no-edit -s
-```
-
-Then force-push the amended branch:
-
-```bash
-git push --force-with-lease
-```
-
-Commits that do not include a valid `Signed-off-by` trailer will
-be rejected by CI.
-
-## Trademark
-
-"IntentProof" and "Verified by IntentProof" are trademarks of
-IntentProof, Inc. Apache 2.0 grants a copyright license; it does not grant a
-trademark license. See [`TRADEMARK.md`](TRADEMARK.md).
+- Run `go test ./...` before opening.
+- Cross-language behavior changes may need matching updates in spec fixtures
+  and sibling SDKs.
 
 ## License
 
-By contributing as a maintainer, you agree your commits are licensed
-under the Apache License 2.0 (see `LICENSE`).
+By contributing, you agree your contributions are licensed under the MIT
+License (see `LICENSE`).
