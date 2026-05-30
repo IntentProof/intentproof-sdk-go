@@ -47,7 +47,7 @@ fi
 
 if [[ -n "${CRITICAL_RULES:-}" ]]; then
   printf '%s\n' "${CRITICAL_RULES[@]}" >"$rules_file"
-elif [[ -n "${CRITICAL_MIN:-}" && ${#CRITICAL_PREFIXES[@]} -gt 0 ]]; then
+elif [[ -n "${CRITICAL_MIN:-}" && ${#CRITICAL_PREFIXES[@]:-0} -gt 0 ]]; then
   while IFS= read -r prefix; do
     [[ -n "$prefix" ]] || continue
     printf '%s:%s\n' "$CRITICAL_MIN" "$prefix"
