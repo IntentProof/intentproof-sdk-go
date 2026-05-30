@@ -47,11 +47,16 @@ fi
 
 if [[ -n "${CRITICAL_RULES:-}" ]]; then
   printf '%s\n' "${CRITICAL_RULES[@]}" >"$rules_file"
-elif [[ -n "${CRITICAL_MIN:-}" && ${#CRITICAL_PREFIXES[@]:-0} -gt 0 ]]; then
-  while IFS= read -r prefix; do
-    [[ -n "$prefix" ]] || continue
-    printf '%s:%s\n' "$CRITICAL_MIN" "$prefix"
-  done < <(printf '%s\n' "${CRITICAL_PREFIXES[@]}") >"$rules_file"
+elif [[ -n "${CRITICAL_MIN:-}" ]]; then
+  if declare -p CRITICAL_PREFIXES &>/dev/null && [[ ${#CRITICAL_PREFIXES[@]} -gt 0 ]]; then
+    while IFS= read -r prefix; do
+      [[ -n "$prefix" ]] || continue
+      printf '%s:%s\n' "$CRITICAL_MIN" "$prefix"
+    done < <(printf '%s\n' "${CRITICAL_PREFIXES[@]}") >"$rules_file"
+  else
+    echo "coverage-tiers.conf must set CRITICAL_RULES or CRITICAL_MIN + CRITICAL_PREFIXES" >&2
+    exit 2
+  fi
 else
   echo "coverage-tiers.conf must set CRITICAL_RULES or CRITICAL_MIN + CRITICAL_PREFIXES" >&2
   exit 2
