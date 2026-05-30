@@ -13,6 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout spec repository
+        uses: actions/checkout@v4
+        with:
+          repository: IntentProof/intentproof-spec
+          ref: main
+          path: intentproof-spec
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
@@ -21,4 +28,11 @@ jobs:
         run: go mod verify
 
       - name: Run tests and enforce coverage
+        env:
+          INTENTPROOF_SPEC_DIR: intentproof-spec
         run: bash ./scripts/run-coverage-gate.sh
+
+      - name: Verify sdk-signing fixtures synced with spec
+        env:
+          INTENTPROOF_SPEC_DIR: intentproof-spec
+        run: bash ./scripts/check-sdk-signing-fixtures-sync.sh
