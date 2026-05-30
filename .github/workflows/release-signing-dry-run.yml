@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir -p dist
           tar czf "dist/intentproof-sdk-go-${{ inputs.release_version }}.tar.gz" \
-            go.mod LICENSE NOTICE README.md CONTRIBUTING.md SECURITY.md
+            go.mod LICENSE README.md CONTRIBUTING.md
 
       - name: Export archive paths
         id: archive
