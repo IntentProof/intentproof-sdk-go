@@ -9,7 +9,7 @@ import (
 )
 
 // SDKVersion is reported on emitted execution events.
-const SDKVersion = "go@0.1.0"
+const SDKVersion = "go@0.2.0"
 
 // ConfigureOptions holds SDK runtime configuration.
 type ConfigureOptions struct {
